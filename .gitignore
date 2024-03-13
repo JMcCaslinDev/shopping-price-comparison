@@ -8,8 +8,14 @@
 # testing
 /coverage
 
-# production
-/build
+# Environment variables
+.env
+
+# Walmart Private Key
+private_key.pem
+
+# Build output
+build/
 
 # misc
 .DS_Store
@@ -21,3 +27,4 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
