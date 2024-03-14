@@ -15,14 +15,17 @@ const StoreGrouping = ({ products, onAddToCart }) => {
   return (
     <>
       {Object.entries(groupedProducts).map(([store, products]) => (
-        <div key={store} className="store-grouping">
+        <div key={`${store}-group`} className="store-grouping">
           <h4>{store}</h4>
           <Row>
-            {products.map((product) => (
-              <Col key={product.itemId} md={4}>
-                <ProductCard product={product} onAddToCart={onAddToCart} />
-              </Col>
-            ))}
+            {products.map((product, index) => {
+              const key = product.itemId ? product.itemId : `${product.name}-${index}`;
+              return (
+                <Col key={key} md={4}>
+                  <ProductCard product={product} onAddToCart={onAddToCart} />
+                </Col>
+              );
+            })}
           </Row>
         </div>
       ))}

@@ -34,6 +34,7 @@
   transition: transform 0.3s ease;
   width: 300px;
   margin: 0 auto;
+  margin-bottom: 10px;
 }
 
 .product-card:hover {
@@ -56,7 +57,8 @@
 }
 
 .product-card .btn-primary {
-  width: 100%;
+  width: 50%;
+  margin-bottom: 10px;
 }
 
 .store-grouping {
