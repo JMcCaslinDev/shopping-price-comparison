@@ -13,7 +13,7 @@ const ProductCard = ({ product, onAddToCart }) => {
       <Card.Img variant="top" src={thumbnailImage} alt={name} />
       <Card.Body>
         <Card.Title>{name}</Card.Title>
-        {/* <Card.Text>{shortDescription}</Card.Text> */}
+        <Card.Text>{shortDescription}</Card.Text>
         <Card.Text>Price: {salePrice ? `$${salePrice.toFixed(2)}` : 'N/A'}</Card.Text>
         <Card.Text>Total Quantity: {quantity} {unit}</Card.Text>
         <Card.Text>Unit Price: {unitPrice ? `$${unitPrice}` : 'N/A'}</Card.Text>

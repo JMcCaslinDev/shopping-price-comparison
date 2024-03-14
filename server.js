@@ -7,9 +7,7 @@ const fs = require('fs');
 
 dotenv.config();
 
-// Axios Interceptors setup
 axios.interceptors.request.use(config => {
-  // Log the full request configuration
   console.log('Request sent with config:', config);
   return config;
 }, error => {
@@ -53,104 +51,123 @@ function generateWalmartHeaders() {
   };
 }
 
-function extractQuantityAndUnit(item) {
-    const fields = [item.name, item.shortDescription, item.longDescription];
-    let quantity = 0;
-    let unit = 'count';
+function extractQuantityInfo(item) {
+  const fields = [item.name, item.shortDescription, item.longDescription];
+  let containerCount = 0;
+  let unitCount = 0;
+  let totalCount = 0;
+  let unit = 'count';
 
-    // Check if the item attributes contain a count_per_pack and multipack_quantity.
-    if (item.attributes && item.attributes.count_per_pack) {
-        quantity = parseInt(item.attributes.count_per_pack, 10);
-        const multipackQuantity = item.attributes.multipack_quantity ? parseInt(item.attributes.multipack_quantity, 10) : 1;
-        quantity *= multipackQuantity;
-        console.log(`Item: ${item.name}, count_per_pack: ${quantity}, multipack_quantity: ${multipackQuantity}`);
-    } else {
-        // Check the description fields for quantity information.
-        const patterns = [
-            /(\d+)\s*(tissues|sheets|pieces|units)\s*(?:per|\/)\s*(box|cube|pack)/i,
-            // ... (other patterns as before)
-        ];
+  const containerPatterns = [
+    /(\d+)\s*(?:flat|cube|pack|boxes?|containers?)/i,
+  ];
 
-        for (const field of fields) {
-            if (field) {
-                for (const pattern of patterns) {
-                    const match = field.match(pattern);
-                    if (match) {
-                        quantity = parseInt(match[1], 10);
-                        unit = match[2];
-                        break;
-                    }
-                }
-            }
-            if (quantity > 0) {
-                break; // Break if quantity has been found.
-            }
+  const unitPatterns = [
+    /(\d+)\s*(?:tissues|sheets|pieces|units|wipes|napkins)/i,
+    /(\d+)\s*(?:tissues|sheets|pieces|units|wipes|napkins)\s*(?:per|\/)\s*(?:box|cube|pack|container)/i,
+  ];
+
+  const totalPatterns = [
+    /(\d+)\s*(?:total|count)\s*(?:tissues|sheets|pieces|units|wipes|napkins)/i,
+  ];
+
+  for (const field of fields) {
+    if (field) {
+      if (containerCount === 0) {
+        for (const pattern of containerPatterns) {
+          const match = field.match(pattern);
+          if (match) {
+            containerCount = parseInt(match[1], 10);
+            break;
+          }
         }
+      }
+
+      if (unitCount === 0) {
+        for (const pattern of unitPatterns) {
+          const match = field.match(pattern);
+          if (match) {
+            unitCount = parseInt(match[1], 10);
+            break;
+          }
+        }
+      }
+
+      if (totalCount === 0) {
+        for (const pattern of totalPatterns) {
+          const match = field.match(pattern);
+          if (match) {
+            totalCount = parseInt(match[1], 10);
+            break;
+          }
+        }
+      }
     }
 
-    if (quantity === 0) {
-        console.error(`No quantity found for item: ${item.name}`);
-        return null;
-    } else {
-        console.log(`Found quantity for item: ${item.name}, Quantity: ${quantity}, Unit: ${unit}`);
-        return { quantity, unit };
+    if ((containerCount > 0 && unitCount > 0) || totalCount > 0) {
+      break;
     }
+  }
+
+  if (totalCount === 0) {
+    totalCount = containerCount * unitCount;
+  }
+
+  if (totalCount === 0) {
+    console.error(`No quantity found for item: ${item.name}`);
+    return null;
+  } else {
+    console.log(`Found quantity for item: ${item.name}, Container Count: ${containerCount}, Unit Count: ${unitCount}, Total Count: ${totalCount}, Unit: ${unit}`);
+    return { containerCount, unitCount, totalCount, unit };
+  }
 }
 
-  
+app.get('/api/search', async (req, res) => {
+  try {
+    const { keyword } = req.query;
+    const headers = generateWalmartHeaders();
 
+    console.group(`API Call: ${keyword}`);
+    const response = await axios.get(`${WALMART_API_BASE_URL}/search`, {
+      params: {
+        query: keyword,
+      },
+      headers: headers,
+    });
+    console.groupEnd();
 
-  app.get('/api/search', async (req, res) => {
-    try {
-      const { keyword } = req.query;
-      const headers = generateWalmartHeaders();
-  
-      console.group(`API Call: ${keyword}`);
-      const response = await axios.get(`${WALMART_API_BASE_URL}/search`, {
-        params: {
-          query: keyword,
-        },
-        headers: headers,
-      });
+    const items = response.data.items.map(item => {
+      console.group(`Item: ${item.name}`);
+      const quantityInfo = extractQuantityInfo(item);
+
+      let unitPrice = null;
+      if (quantityInfo && item.salePrice) {
+        unitPrice = (item.salePrice / quantityInfo.totalCount).toFixed(2);
+      }
+
+      console.log(`Debug: unitPrice: $${unitPrice}`);
       console.groupEnd();
-  
-      const items = response.data.items.map(item => {
-        console.group(`Item: ${item.name}`);
-        const quantityInfo = extractQuantityAndUnit(item);
-  
-        // Calculate the unit price if quantity info is available
-        let unitPrice = null;
-        let pricePerHundred = null;
-        if (quantityInfo && item.salePrice) {
-          unitPrice = (item.salePrice / quantityInfo.quantity).toFixed(2);
-          pricePerHundred = (item.salePrice / quantityInfo.quantity * 100).toFixed(2);
-        }
-  
-        console.log(`Debug: unitPrice: $${unitPrice}, pricePerHundred: $${pricePerHundred}`);
-        console.groupEnd();
-  
-        return {
-          name: item.name,
-          salePrice: item.salePrice,
-          shortDescription: item.shortDescription,
-          thumbnailImage: item.thumbnailImage,
-          quantity: quantityInfo ? quantityInfo.quantity : null,
-          unit: quantityInfo ? quantityInfo.unit : null,
-          unitPrice: unitPrice,
-          pricePerHundred: pricePerHundred, // Add this line to include price per 100 count
-        };
-      });
-  
-      res.json(items);
-    } catch (error) {
-      console.error('Error fetching Walmart products:', error.message);
-      console.error('Error details:', error.response ? error.response.data : 'No response data available');
-      res.status(500).json({ error: 'An error occurred while fetching Walmart products' });
-    }
-  });
-  
-  
 
+      return {
+        name: item.name,
+        salePrice: item.salePrice,
+        shortDescription: item.shortDescription,
+        thumbnailImage: item.thumbnailImage,
+        containerCount: quantityInfo ? quantityInfo.containerCount : null,
+        unitCount: quantityInfo ? quantityInfo.unitCount : null,
+        totalCount: quantityInfo ? quantityInfo.totalCount : null,
+        unit: quantityInfo ? quantityInfo.unit : null,
+        unitPrice: unitPrice,
+      };
+    });
+
+    res.json(items);
+  } catch (error) {
+    console.error('Error fetching Walmart products:', error.message);
+    console.error('Error details:', error.response ? error.response.data : 'No response data available');
+    res.status(500).json({ error: 'An error occurred while fetching Walmart products' });
+  }
+});
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
