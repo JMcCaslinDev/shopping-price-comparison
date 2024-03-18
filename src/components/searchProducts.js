@@ -20,6 +20,7 @@ async function searchProducts(req, res) {
 
     const items = response.data.items.map(item => {
       console.group(`Item: ${item.name}`);
+      console.log("Items: ", response.data);
       const quantityInfo = extractQuantityInfo(item);
 
       let unitPrice = null;

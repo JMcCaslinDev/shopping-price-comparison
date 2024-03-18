@@ -1,4 +1,3 @@
-
 function extractQuantityInfo(item) {
     const fields = [item.name, item.shortDescription, item.longDescription];
     let containerCount = 0;
@@ -7,16 +6,17 @@ function extractQuantityInfo(item) {
     let unit = 'count';
   
     const containerPatterns = [
-      /(\d+)\s*(?:flat|cube|pack|boxes?|containers?)/i,
+      /(\d+)\s*(?:mega|regular|double|triple|big)?\s*(?:flat|cube|pack|boxes?|containers?|rolls?)/i,
     ];
   
     const unitPatterns = [
       /(\d+)\s*(?:tissues|sheets|pieces|units|wipes|napkins)/i,
-      /(\d+)\s*(?:tissues|sheets|pieces|units|wipes|napkins)\s*(?:per|\/)\s*(?:box|cube|pack|container)/i,
+      /(\d+)\s*(?:-ply)?\s*(?:tissues|sheets|pieces|units|wipes|napkins)\s*(?:per|\/)\s*(?:box|cube|pack|container|roll)/i,
     ];
   
     const totalPatterns = [
-      /(\d+)\s*(?:total|count)\s*(?:tissues|sheets|pieces|units|wipes|napkins)/i,
+      /(\d+)\s*(?:total|count)?\s*(?:tissues|sheets|pieces|units|wipes|napkins)/i,
+      /(\d+)\s*(?:tissues|sheets|pieces|units|wipes|napkins)\s*(?:in\s*total|total)/i,
     ];
   
     for (const field of fields) {
@@ -69,6 +69,5 @@ function extractQuantityInfo(item) {
       return { containerCount, unitCount, totalCount, unit };
     }
   }
-
-
-module.exports = extractQuantityInfo;
+  
+  module.exports = extractQuantityInfo;
