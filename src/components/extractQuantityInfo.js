@@ -47,19 +47,19 @@ function extractQuantityInfo(item) {
         }
       }
     }
-    if (totalCount > 0 && (containerCount > 0 || unitCount > 0)) {
+    if (containerCount > 0 && unitCount > 0) {
       break;
     }
   }
 
-  if (totalCount > 0) {
+  if (containerCount > 0 && unitCount > 0) {
+    totalCount = containerCount * unitCount;
+  } else if (totalCount > 0) {
     if (containerCount === 0 && unitCount > 0) {
       containerCount = Math.round(totalCount / unitCount);
     } else if (unitCount === 0 && containerCount > 0) {
       unitCount = Math.round(totalCount / containerCount);
     }
-  } else {
-    totalCount = containerCount * unitCount;
   }
 
   if (totalCount === 0) {
