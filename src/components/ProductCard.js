@@ -16,7 +16,8 @@ const ProductCard = ({ product, onAddToCart }) => {
         <Card.Text>{shortDescription}</Card.Text>
         <Card.Text>Price: {salePrice ? `$${salePrice.toFixed(2)}` : 'N/A'}</Card.Text>
         <Card.Text>Price per Unit: {unitPrice ? `$${unitPrice}` : 'N/A'}</Card.Text>
-        <Card.Text>Total Unit Count: {totalCount} {unit}</Card.Text>
+        <Card.Text>Count per Container: {unitCount} {unit}</Card.Text>
+        <Card.Text>Total Unit Count: {(totalCount)} {unit}</Card.Text>
         <Card.Text>Total Containers: {containerCount}</Card.Text>
         <Button variant="primary" onClick={handleAddToCart}>
           Add to Cart
